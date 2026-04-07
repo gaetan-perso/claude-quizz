@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:skills.sh)",
+      "WebSearch",
+      "WebFetch(domain:skills.laravel.cloud)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(dir \"C:\\\\projets\\\\IA\\\\app_quizz_claude\")",
+      "Bash(powershell -Command \"Set-Location ''C:\\\\projets\\\\IA\\\\app_quizz_claude''; $result = gh repo create gaetan-perso/claude-quizz --private --source=. --remote=origin --push 2>&1; $result | Out-String\")",
+      "Bash(powershell -Command \"Set-Location ''C:\\\\projets\\\\IA\\\\app_quizz_claude''; gh repo create gaetan-perso/claude-quizz --private --source=. --remote=origin --push\")",
+      "Bash(echo exit:$?)"
+    ]
+  }
+}
