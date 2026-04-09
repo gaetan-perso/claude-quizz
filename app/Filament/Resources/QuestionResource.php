@@ -7,60 +7,68 @@ use App\Enums\QuestionSource;
 use App\Enums\QuestionType;
 use App\Filament\Resources\QuestionResource\Pages;
 use App\Models\Question;
-use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 final class QuestionResource extends Resource
 {
     protected static ?string $model = Question::class;
-    protected static ?string $navigationIcon = 'heroicon-o-question-mark-circle';
-    protected static ?string $navigationGroup = 'Bibliothèque';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-question-mark-circle';
+    protected static string|\UnitEnum|null $navigationGroup = 'Bibliothèque';
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Question')->schema([
-                Forms\Components\Select::make('category_id')
+        return $schema->components([
+            Section::make('Question')->schema([
+                Select::make('category_id')
                     ->relationship('category', 'name')
                     ->searchable()
                     ->preload()
                     ->required(),
-                Forms\Components\Textarea::make('text')
+                Textarea::make('text')
                     ->required()
                     ->rows(3)
                     ->columnSpanFull(),
-                Forms\Components\Select::make('difficulty')
+                Select::make('difficulty')
                     ->options(collect(Difficulty::cases())->mapWithKeys(
                         fn(Difficulty $d) => [$d->value => $d->label()]
                     ))
                     ->required(),
-                Forms\Components\Select::make('type')
+                Select::make('type')
                     ->options([
                         QuestionType::MultipleChoice->value => 'QCM (4 choix)',
                         QuestionType::Open->value           => 'Réponse ouverte',
                     ])
                     ->required()
-                    ->default(QuestionType::MultipleChoice->value),
-                Forms\Components\TextInput::make('estimated_time_seconds')
+                    ->default(QuestionType::MultipleChoice->value)
+                    ->live(),
+                TextInput::make('estimated_time_seconds')
                     ->numeric()
                     ->default(30)
                     ->suffix('secondes'),
-                Forms\Components\TagsInput::make('tags')->separator(','),
-                Forms\Components\Toggle::make('is_active')->default(true),
+                TagsInput::make('tags')->separator(','),
+                Toggle::make('is_active')->default(true),
             ]),
 
-            Forms\Components\Section::make('Choix de réponse')
-                ->visible(fn (Forms\Get $get) => $get('type') === QuestionType::MultipleChoice->value)
+            Section::make('Choix de réponse')
+                ->visible(fn (Get $get) => $get('type') === QuestionType::MultipleChoice->value)
                 ->schema([
-                    Forms\Components\Repeater::make('choices')
+                    Repeater::make('choices')
                         ->relationship()
                         ->schema([
-                            Forms\Components\TextInput::make('text')->required()->columnSpan(3),
-                            Forms\Components\Toggle::make('is_correct')->label('Correcte'),
+                            TextInput::make('text')->required()->columnSpan(3),
+                            Toggle::make('is_correct')->label('Correcte'),
                         ])
                         ->columns(4)
                         ->minItems(4)
@@ -69,8 +77,8 @@ final class QuestionResource extends Resource
                         ->reorderableWithButtons(),
                 ]),
 
-            Forms\Components\Section::make('Pédagogie')->schema([
-                Forms\Components\Textarea::make('explanation')
+            Section::make('Pédagogie')->schema([
+                Textarea::make('explanation')
                     ->rows(4)
                     ->columnSpanFull()
                     ->helperText('Explication affichée après la réponse'),

@@ -14,6 +14,11 @@ final class ListQuestions extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            Actions\Action::make('generate_ai')
+                ->label('Générer via IA')
+                ->icon('heroicon-o-sparkles')
+                ->color('primary')
+                ->url(fn () => route('filament.admin.pages.generate-questions')),
         ];
     }
 }

@@ -86,7 +86,8 @@
       "Bash(php -l \"app/Filament/Resources/QuestionResource/Pages/EditQuestion.php\")",
       "Bash(php -l \"C:/projets/IA/app_quizz_claude/app/Filament/Resources/QuestionResource.php\")",
       "Bash(php.exe -l \"C:/projets/IA/app_quizz_claude/app/Filament/Resources/QuestionResource.php\")",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(cmd.exe /c \"dir C:\\\\projets\\\\IA\\\\app_quizz_claude\\\\vendor\\\\laravel\")"
     ]
   }
 }
