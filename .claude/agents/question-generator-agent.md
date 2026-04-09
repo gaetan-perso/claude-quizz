@@ -362,6 +362,18 @@ it('rejects generation without admin role', function () {
 // Ne jamais bloquer l'utilisateur à cause de l'IA
 ```
 
+## GitHub Project Board
+
+Si un numéro d'issue est fourni dans le contexte, déplace le ticket :
+
+```bash
+# Au début du travail
+bash .claude/scripts/move-ticket.sh <issue_number> "In Progress"
+
+# À la fin (statut DONE)
+bash .claude/scripts/move-ticket.sh <issue_number> "Done"
+```
+
 ## Statuts de reporting
 
 - **DONE** : service + job + controller + tests verts + PHPStan OK

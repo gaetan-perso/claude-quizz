@@ -330,6 +330,18 @@ it('caches player performance for 5 minutes', function () { ... });
 it('invalidates cache after answer submission', function () { ... });
 ```
 
+## GitHub Project Board
+
+Si un numéro d'issue est fourni dans le contexte, déplace le ticket :
+
+```bash
+# Au début du travail
+bash .claude/scripts/move-ticket.sh <issue_number> "In Progress"
+
+# À la fin (statut DONE)
+bash .claude/scripts/move-ticket.sh <issue_number> "Done"
+```
+
 ## Statuts de reporting
 
 - **DONE** : algorithme + sélection + cache + tests verts + PHPStan OK

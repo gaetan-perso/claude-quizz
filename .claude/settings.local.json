@@ -68,7 +68,18 @@
       "Bash(docker compose:*)",
       "Bash(MSYS_NO_PATHCONV=1 docker compose exec app php /var/www/artisan --version)",
       "Bash(docker run:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(gh project:*)",
+      "Bash(gh api graphql -f 'query=:*)",
+      "Bash(gh auth:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(where gh:*)",
+      "Bash(cmd /c \"gh auth status\")",
+      "Bash(cmd /c \"gh --version\")",
+      "Bash(powershell -Command \"gh --version\")",
+      "Bash(powershell -Command \"gh auth status\")",
+      "Bash(gh api:*)",
+      "Bash(mkdir -p C:/projets/IA/app_quizz_claude/.claude/scripts)"
     ]
   }
 }

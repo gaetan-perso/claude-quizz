@@ -93,6 +93,18 @@ tests/
 └── Unit/
 ```
 
+## GitHub Project Board
+
+Si un numéro d'issue est fourni dans le contexte, déplace le ticket :
+
+```bash
+# Au début du travail
+bash .claude/scripts/move-ticket.sh <issue_number> "In Progress"
+
+# À la fin (statut DONE)
+bash .claude/scripts/move-ticket.sh <issue_number> "Done"
+```
+
 ## Statuts de reporting au parent
 
 Quand tu termines, rapporte l'un de ces statuts :

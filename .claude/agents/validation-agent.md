@@ -283,6 +283,18 @@ it('rejects answer submitted after timer expiry', function () { ... });
 it('prevents double-answering the same question', function () { ... });
 ```
 
+## GitHub Project Board
+
+Si un numéro d'issue est fourni dans le contexte, déplace le ticket :
+
+```bash
+# Au début du travail
+bash .claude/scripts/move-ticket.sh <issue_number> "In Progress"
+
+# À la fin (statut DONE)
+bash .claude/scripts/move-ticket.sh <issue_number> "Done"
+```
+
 ## Statuts de reporting
 
 - **DONE** : service + évaluation QCM + évaluation ouverte + tests verts + PHPStan OK

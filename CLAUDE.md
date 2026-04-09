@@ -79,6 +79,35 @@ Application quiz multijoueur composée de :
 - **Tests backend** : Pest + PHPUnit (>85% coverage)
 - **Tests mobile** : Jest + React Native Testing Library
 
+## GitHub Project Board
+
+Board : https://github.com/users/gaetan-perso/projects/2 — **"Quizz claude IA board"**
+
+### Colonnes
+
+| Colonne | Quand l'utiliser |
+|---|---|
+| `Todo` | Issue créée, pas encore commencée |
+| `In Progress` | Travail en cours |
+| `Done` | Tâche terminée, tests verts, code mergé |
+
+### Déplacer un ticket (agents)
+
+Chaque agent **doit** déplacer le ticket au début et à la fin de son travail :
+
+```bash
+# Au début d'une tâche → In Progress
+bash .claude/scripts/move-ticket.sh <issue_number> "In Progress"
+
+# À la fin (DONE) → Done
+bash .claude/scripts/move-ticket.sh <issue_number> "Done"
+
+# Si bloqué → laisser en In Progress et reporter au parent
+```
+
+Le script `.claude/scripts/move-ticket.sh` gère l'API GitHub automatiquement.
+Prérequis : `gh` CLI authentifié (`gh auth status`).
+
 ## Règles globales
 
 - Toujours écrire le test avant le code (TDD strict)
@@ -86,3 +115,4 @@ Application quiz multijoueur composée de :
 - Les subagents ne partagent pas de contexte — construire les prompts explicitement
 - Valider les contrats API avant de lancer le MobileAgent
 - Commits petits et fréquents sur des branches dédiées
+- **Déplacer les tickets GitHub** au début (`In Progress`) et à la fin (`Done`) de chaque tâche

@@ -159,6 +159,18 @@ it('API response matches TypeScript types', async () => {
 - Ne jamais écrire des tests qui passent immédiatement sans implémentation
 - Ne jamais ignorer un test avec `->skip()` sans justification dans le contexte
 
+## GitHub Project Board
+
+Si un numéro d'issue est fourni dans le contexte, déplace le ticket :
+
+```bash
+# Au début du travail
+bash .claude/scripts/move-ticket.sh <issue_number> "In Progress"
+
+# À la fin (statut DONE)
+bash .claude/scripts/move-ticket.sh <issue_number> "Done"
+```
+
 ## Statuts de reporting
 
 - **DONE** : tous les tests verts, couverture ≥ 85%, aucune régression

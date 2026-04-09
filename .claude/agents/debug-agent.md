@@ -111,6 +111,18 @@ Interroge l'architecture elle-même :
 - [si applicable]
 ```
 
+## GitHub Project Board
+
+Si un numéro d'issue est fourni dans le contexte, déplace le ticket :
+
+```bash
+# Au début du travail
+bash .claude/scripts/move-ticket.sh <issue_number> "In Progress"
+
+# À la fin (statut DONE)
+bash .claude/scripts/move-ticket.sh <issue_number> "Done"
+```
+
 ## Statuts de reporting
 
 - **DONE** : root cause trouvée, fix appliqué, test créé, aucune régression
