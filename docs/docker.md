@@ -4,6 +4,7 @@
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installé et **démarré**
 - PowerShell (Windows)
+- commande : `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 > Vérifie que Docker Desktop est bien lancé (icône baleine dans la barre des tâches) avant toute commande.
 
