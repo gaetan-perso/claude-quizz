@@ -64,7 +64,11 @@
       "Bash(\"C:/projets/IA/app_quizz_claude/storage/logs/filament_dirs.txt\")",
       "Bash(\"C:/projets/IA/app_quizz_claude/storage/logs/admin_routes.txt\")",
       "Bash(\"C:/projets/IA/app_quizz_claude/storage/logs/models.txt\")",
-      "Bash(\"C:/projets/IA/app_quizz_claude/storage/logs/done.txt\")"
+      "Bash(\"C:/projets/IA/app_quizz_claude/storage/logs/done.txt\")",
+      "Bash(docker compose:*)",
+      "Bash(MSYS_NO_PATHCONV=1 docker compose exec app php /var/www/artisan --version)",
+      "Bash(docker run:*)",
+      "Bash(docker exec:*)"
     ]
   }
 }
