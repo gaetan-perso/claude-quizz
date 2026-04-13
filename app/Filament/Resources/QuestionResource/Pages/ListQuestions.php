@@ -18,7 +18,7 @@ final class ListQuestions extends ListRecords
                 ->label('Générer via IA')
                 ->icon('heroicon-o-sparkles')
                 ->color('primary')
-                ->url(fn () => \App\Filament\Pages\GenerateQuestions::getUrl()),
+                ->url(fn () => route('filament.admin.pages.generate-questions')),
         ];
     }
 }
