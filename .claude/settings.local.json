@@ -87,7 +87,10 @@
       "Bash(php -l \"C:/projets/IA/app_quizz_claude/app/Filament/Resources/QuestionResource.php\")",
       "Bash(php.exe -l \"C:/projets/IA/app_quizz_claude/app/Filament/Resources/QuestionResource.php\")",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(cmd.exe /c \"dir C:\\\\projets\\\\IA\\\\app_quizz_claude\\\\vendor\\\\laravel\")"
+      "Bash(cmd.exe /c \"dir C:\\\\projets\\\\IA\\\\app_quizz_claude\\\\vendor\\\\laravel\")",
+      "Bash(bash .claude/scripts/move-ticket.sh 13 \"In Progress\")",
+      "Bash(composer require:*)",
+      "Bash(bash .claude/scripts/move-ticket.sh 13 \"Done\")"
     ]
   }
 }
