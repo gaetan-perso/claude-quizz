@@ -92,7 +92,21 @@
       "Bash(composer require:*)",
       "Bash(bash .claude/scripts/move-ticket.sh 13 \"Done\")",
       "Bash(php artisan:*)",
-      "Bash(cmd /c \"php artisan migrate:status 2>&1\")"
+      "Bash(cmd /c \"php artisan migrate:status 2>&1\")",
+      "Bash(gh issue:*)",
+      "Bash([ -d \"C:/projets/IA/app_quizz_claude/docs\" ])",
+      "Bash(cmd /c \"mkdir C:\\\\projets\\\\IA\\\\app_quizz_claude\\\\docs\\\\plans 2>nul && echo created || echo already exists\")",
+      "Bash(gh repo:*)",
+      "Bash(powershell -Command \"& gh auth status\")",
+      "Bash(powershell -Command \"& gh repo list\")",
+      "Bash(gh --version)",
+      "Bash(cmd /c \"gh repo view gaetan-perso/claude-quizz 2>&1\")",
+      "Bash(cmd /c \"echo hello && gh --version 2>&1\")",
+      "Bash(printf '%s\\\\n' \"hello from bash\")",
+      "Bash(gh label:*)",
+      "Bash(echo \"backend: $?\")",
+      "Bash(echo \"mobile: $?\")",
+      "Bash(echo \"testing: $?\")"
     ]
   }
 }
