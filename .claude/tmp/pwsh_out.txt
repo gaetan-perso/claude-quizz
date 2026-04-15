@@ -1,0 +1,1 @@
+bash: pwsh: command not found

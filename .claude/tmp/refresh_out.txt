@@ -1,0 +1,6 @@
+=== Refreshing token with project scopes ===
+
+! First copy your one-time code: 1972-4432
+Open this URL to continue in your web browser: https://github.com/login/device
+✓ Authentication complete.
+RC: 0

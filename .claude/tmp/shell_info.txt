@@ -1,0 +1,13 @@
+SHELL: /usr/bin/bash
+PATH: C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Recovery\OEM\Backup\;C:\Program Files\Git\cmd;C:\Program Files\GitHub CLI\;C:\composer;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\nodejs\;C:\Users\gaeta\AppData\Local\Microsoft\WindowsApps;C:\php\php8.3;C:\Users\gaeta\AppData\Roaming\Composer\vendor\bin;C:\Program Files\MySQL\MySQL Server 8.4\bin;C:\Users\gaeta\AppData\Roaming\npm;C:\Program Files\nodejs;C:\Program Files\Git\mingw64\bin:/c/Users/gaeta/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/bfc4b1e8-a1b3-4780-a827-82976938c486/c13d4686-01f1-4cb3-8568-198e85328ce9/bin
+HOME: /c/Users/gaeta
+USER: 
+OS: bash: uname: command not found
+which: bash: which: command not found
+type ls: bash: type: ls: not found
+type gh: bash: type: gh: not found
+type php: bash: type: php: not found
+type node: bash: type: node: not found
+type composer: bash: type: composer: not found
+---compgen---
+bash: head: command not found

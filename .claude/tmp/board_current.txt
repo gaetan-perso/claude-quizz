@@ -1,0 +1,2 @@
+{"data":{"node":null},"errors":[{"type":"NOT_FOUND","path":["node"],"locations":[{"line":3,"column":3}],"message":"Could not resolve to a node with the global id of 'PVT_kwHOAG1LKc4BUJ8p'."}]}gh: Could not resolve to a node with the global id of 'PVT_kwHOAG1LKc4BUJ8p'.
+RC: 1

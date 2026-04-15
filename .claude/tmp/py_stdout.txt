@@ -1,0 +1,2 @@
+bash: python: command not found
+bash: python3: command not found
