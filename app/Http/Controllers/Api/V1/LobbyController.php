@@ -2,7 +2,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\Difficulty;
-use App\Events\LobbyGameCompleted;
 use App\Events\LobbyPlayerJoined;
 use App\Events\LobbyPlayerLeft;
 use App\Events\LobbyStarted;
