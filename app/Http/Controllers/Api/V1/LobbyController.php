@@ -2,6 +2,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\Difficulty;
+use App\Events\LobbyGameCompleted;
+use App\Events\LobbyPlayerJoined;
+use App\Events\LobbyPlayerLeft;
+use App\Events\LobbyStarted;
 use App\Http\Controllers\Controller;
 use App\Models\Lobby;
 use App\Models\LobbyParticipant;
@@ -66,6 +70,13 @@ final class LobbyController extends Controller
 
         $lobby->load(['category', 'participants.user']);
 
+        LobbyPlayerJoined::dispatch(
+            lobbyId:      $lobby->id,
+            userId:       $request->user()->id,
+            userName:     $request->user()->name,
+            participants: $this->formatParticipants($lobby),
+        );
+
         return response()->json(['data' => $this->format($lobby)]);
     }
 
@@ -78,6 +89,13 @@ final class LobbyController extends Controller
         abort_if($participant === null, 422, 'Vous n\'êtes pas dans ce lobby.');
 
         $participant->delete();
+
+        $lobby->load(['participants.user']);
+        LobbyPlayerLeft::dispatch(
+            lobbyId:      $lobby->id,
+            userId:       $request->user()->id,
+            participants: $this->formatParticipants($lobby),
+        );
 
         return response()->json(['data' => null]);
     }
@@ -104,6 +122,20 @@ final class LobbyController extends Controller
 
         $lobby->load(['category', 'participants.user']);
 
+        $sessions = QuizSession::where('category_id', $lobby->category_id)
+            ->whereIn('user_id', $lobby->participants->pluck('user_id'))
+            ->where('status', 'active')
+            ->latest()
+            ->get()
+            ->keyBy('user_id');
+
+        $sessionMap = $sessions->map(fn ($s) => $s->id)->toArray();
+
+        LobbyStarted::dispatch(
+            lobbyId:    $lobby->id,
+            sessionMap: $sessionMap,
+        );
+
         return response()->json(['data' => $this->format($lobby)]);
     }
 
@@ -127,5 +159,14 @@ final class LobbyController extends Controller
             ])->values(),
             'started_at'   => $lobby->started_at,
         ];
+    }
+
+    private function formatParticipants(Lobby $lobby): array
+    {
+        return $lobby->participants->map(fn (LobbyParticipant $p) => [
+            'user_id' => $p->user_id,
+            'name'    => $p->user->name,
+            'score'   => $p->score,
+        ])->values()->toArray();
     }
 }
