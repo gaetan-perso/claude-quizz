@@ -40,5 +40,6 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function (): void {
     Route::get('lobbies/{lobby}',        [LobbyController::class, 'show']);
     Route::post('lobbies/join',          [LobbyController::class, 'join']);
     Route::post('lobbies/{lobby}/leave', [LobbyController::class, 'leave']);
-    Route::post('lobbies/{lobby}/start', [LobbyController::class, 'start']);
+    Route::post('lobbies/{lobby}/start',    [LobbyController::class, 'start']);
+    Route::post('lobbies/{lobby}/complete', [LobbyController::class, 'complete']);
 });

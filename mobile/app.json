@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Quiz Claude",
+    "slug": "quiz-claude",
+    "scheme": "quiz-claude",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      }
+    },
+    "plugins": ["expo-router"],
+    "assetBundlePatterns": ["**/*"]
+  }
+}

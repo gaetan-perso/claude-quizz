@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\Difficulty;
+use App\Events\LobbyGameCompleted;
 use App\Events\LobbyPlayerJoined;
 use App\Events\LobbyPlayerLeft;
 use App\Events\LobbyStarted;
@@ -136,6 +137,40 @@ final class LobbyController extends Controller
         );
 
         return response()->json(['data' => $this->format($lobby)]);
+    }
+
+    public function complete(Request $request, Lobby $lobby): JsonResponse
+    {
+        abort_if($lobby->host_user_id !== $request->user()->id, 403, 'Seul l\'hôte peut terminer la partie.');
+        abort_if($lobby->status->value !== 'in_progress', 422, 'Le lobby n\'est pas en cours.');
+
+        $lobby->update(['status' => 'completed', 'completed_at' => now()]);
+
+        // Compléter toutes les sessions actives des participants
+        QuizSession::whereIn('user_id', $lobby->participants->pluck('user_id'))
+            ->where('status', 'active')
+            ->update(['status' => 'completed', 'completed_at' => now()]);
+
+        // Construire le classement final
+        $leaderboard = $lobby->participants->load('user')
+            ->map(fn (LobbyParticipant $p) => [
+                'user_id' => $p->user_id,
+                'name'    => $p->user->name,
+                'score'   => QuizSession::where('user_id', $p->user_id)
+                    ->where('category_id', $lobby->category_id)
+                    ->latest()
+                    ->value('score') ?? 0,
+            ])
+            ->sortByDesc('score')
+            ->values()
+            ->toArray();
+
+        LobbyGameCompleted::dispatch(
+            lobbyId:     $lobby->id,
+            leaderboard: $leaderboard,
+        );
+
+        return response()->json(['data' => ['leaderboard' => $leaderboard]]);
     }
 
     private function format(Lobby $lobby): array
