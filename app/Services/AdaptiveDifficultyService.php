@@ -49,10 +49,13 @@ final class AdaptiveDifficultyService
     {
         $answeredIds = $session->answers()->pluck('question_id')->all();
 
+        // Utilise category_ids si disponible, sinon repli sur category_id (rétrocompatibilité)
+        $categoryIds = $session->category_ids ?? ($session->category_id !== null ? [$session->category_id] : []);
+
         foreach ($this->fallbackOrder($session->current_difficulty) as $difficulty) {
             $question = Question::query()
                 ->active()
-                ->where('category_id', $session->category_id)
+                ->whereIn('category_id', $categoryIds)
                 ->forDifficulty($difficulty)
                 ->whereNotIn('id', $answeredIds)
                 ->inRandomOrder()
@@ -89,8 +92,8 @@ final class AdaptiveDifficultyService
     {
         return match ($difficulty) {
             Difficulty::Hard   => [Difficulty::Hard, Difficulty::Medium, Difficulty::Easy],
-            Difficulty::Medium => [Difficulty::Medium, Difficulty::Easy],
-            Difficulty::Easy   => [Difficulty::Easy],
+            Difficulty::Medium => [Difficulty::Medium, Difficulty::Easy, Difficulty::Hard],
+            Difficulty::Easy   => [Difficulty::Easy, Difficulty::Medium, Difficulty::Hard],
         };
     }
 }

@@ -9,15 +9,19 @@ final class CategoryController extends Controller
 {
     public function index(): JsonResponse
     {
-        $categories = Category::active()->orderBy('name')->get();
+        $categories = Category::active()
+            ->withCount(['questions' => fn ($q) => $q->active()])
+            ->orderBy('name')
+            ->get();
 
         return response()->json([
             'data' => $categories->map(fn (Category $c) => [
-                'id'    => $c->id,
-                'name'  => $c->name,
-                'slug'  => $c->slug,
-                'icon'  => $c->icon,
-                'color' => $c->color,
+                'id'             => $c->id,
+                'name'           => $c->name,
+                'slug'           => $c->slug,
+                'icon'           => $c->icon,
+                'color'          => $c->color,
+                'question_count' => $c->questions_count,
             ])->values(),
         ]);
     }

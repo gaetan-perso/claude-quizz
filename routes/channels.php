@@ -4,6 +4,9 @@ use App\Models\Lobby;
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
+// Force Sanctum token auth pour les clients mobiles (Bearer token)
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
+
 Broadcast::channel('lobby.{lobbyId}', function (User $user, string $lobbyId): array|false {
     $lobby = Lobby::with('participants')->find($lobbyId);
 

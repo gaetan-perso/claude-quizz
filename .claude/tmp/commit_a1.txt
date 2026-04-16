@@ -1,0 +1,4 @@
+[main b3ece00] feat(reverb): install and configure Laravel Reverb
+ 4 files changed, 152 insertions(+), 1 deletion(-)
+ create mode 100644 config/broadcasting.php
+ create mode 100644 config/reverb.php

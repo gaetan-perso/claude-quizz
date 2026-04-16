@@ -1,0 +1,53 @@
+On branch main
+Your branch is ahead of 'origin/main' by 15 commits.
+  (use "git push" to publish your local commits)
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   mobile/app/(app)/index.tsx
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .claude/settings.local.json
+	modified:   composer.json
+	modified:   composer.lock
+	modified:   config/reverb.php
+	modified:   mobile/app.json
+	modified:   mobile/app/(app)/_layout.tsx
+	modified:   mobile/package.json
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.claude/tmp/commit_a1.txt
+	.claude/tmp/commit_a2.txt
+	.claude/tmp/commit_a3.txt
+	.claude/tmp/commit_a4.txt
+	.claude/tmp/commit_a5.txt
+	.claude/tmp/commit_a6.txt
+	.claude/tmp/commit_a7.txt
+	.claude/tmp/commit_cleanup.txt
+	.claude/tmp/config_clear.txt
+	.claude/tmp/git_out.txt
+	.claude/tmp/git_status.txt
+	.claude/tmp/gitlog.txt
+	.claude/tmp/phppath.txt
+	.claude/tmp/test.txt
+	.claude/tmp/ticket37.txt
+	.claude/tmp/ticket38.txt
+	.claude/tmp/ticket38done.txt
+	.claude/tmp/ticket39done.txt
+	.claude/tmp/ticket40done.txt
+	.claude/tmp/ticket41done.txt
+	.claude/tmp/ticket42done.txt
+	.claude/tmp/ticket43done.txt
+	gh_out.txt
+	gh_path.txt
+	issues_list.txt
+	mobile/app/(app)/solo/
+	mobile/package-lock.json
+	rename_all_out.txt
+	rename_issues.sh
+	rename_output.txt
+	test_out.txt
+

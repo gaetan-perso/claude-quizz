@@ -1,0 +1,10 @@
+5583a50 feat(reverb): dispatch broadcast events from LobbyController
+4052d1f feat(reverb): event LobbyGameCompleted
+3feac50 feat(reverb): event LobbyStarted
+8c13a6e feat(reverb): event LobbyPlayerLeft
+99639ce feat(reverb): event LobbyPlayerJoined
+b3338ef feat(reverb): define presence channel for lobby
+b3ece00 feat(reverb): install and configure Laravel Reverb
+c357e5d création des issues mobiles
+b5bf1e3 mise en place de la partie mobile (WIP)
+11983fb génération question + mise en place API REST

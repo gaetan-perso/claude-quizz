@@ -18,7 +18,8 @@ interface AnswerResult {
 }
 
 export default function SoloQuizScreen() {
-  const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
+  const { sessionId, maxQuestions: maxQ } = useLocalSearchParams<{ sessionId: string; maxQuestions?: string }>();
+  const total = parseInt(maxQ ?? '20', 10);
   const router = useRouter();
 
   const [question, setQuestion]   = useState<Question | null>(null);
@@ -89,7 +90,7 @@ export default function SoloQuizScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.counter}>Question {questionNum}</Text>
+        <Text style={styles.counter}>Q{questionNum}/{total}</Text>
         <View style={styles.scoreBadge}>
           <Text style={styles.scoreText}>{score} pts</Text>
         </View>

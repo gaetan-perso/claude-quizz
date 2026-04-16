@@ -12,24 +12,31 @@
     "preset": "jest-expo"
   },
   "dependencies": {
-    "expo": "~52.0.0",
-    "expo-constants": "~17.0.0",
-    "expo-router": "~4.0.0",
-    "expo-secure-store": "~14.0.0",
-    "expo-status-bar": "~2.0.0",
+    "@react-native-async-storage/async-storage": "^2.0.0",
+    "@react-native-community/netinfo": "^11.4.1",
+    "axios": "^1.7.0",
+    "expo": "~54.0.0",
+    "expo-constants": "~18.0.13",
+    "expo-font": "~14.0.11",
+    "expo-linking": "~8.0.11",
+    "expo-router": "~6.0.23",
+    "expo-secure-store": "~15.0.8",
+    "expo-splash-screen": "~31.0.13",
+    "expo-status-bar": "~3.0.9",
+    "expo-system-ui": "~6.0.9",
     "laravel-echo": "^1.16.0",
     "pusher-js": "^8.4.0",
-    "axios": "^1.7.0",
-    "zustand": "^5.0.0",
-    "@react-native-async-storage/async-storage": "1.23.1",
-    "react": "18.3.2",
-    "react-native": "0.76.5"
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
-    "@types/react": "~18.3.0",
-    "@types/pusher-js": "^8.0.0",
-    "jest-expo": "~52.0.0",
-    "typescript": "^5.3.0"
+    "@types/react": "^19.1.0",
+    "jest-expo": "~54.0.0",
+    "typescript": "^5.8.0"
   }
 }

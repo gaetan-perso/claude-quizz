@@ -28,13 +28,15 @@ final class SessionController extends Controller
                 'id'                 => $s->id,
                 'status'             => $s->status,
                 'score'              => $s->score,
+                'max_questions'      => $s->max_questions,
                 'current_difficulty' => $s->current_difficulty->value,
                 'completed_at'       => $s->completed_at,
                 'created_at'         => $s->created_at,
-                'category'           => [
+                'category_ids'       => $s->category_ids ?? ($s->category_id !== null ? [$s->category_id] : []),
+                'category'           => $s->category !== null ? [
                     'id'   => $s->category->id,
                     'name' => $s->category->name,
-                ],
+                ] : null,
             ])->values(),
             'meta' => [
                 'current_page' => $sessions->currentPage(),
@@ -47,17 +49,39 @@ final class SessionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category_id' => ['required', 'ulid', 'exists:categories,id'],
+            'category_id'    => ['nullable', 'ulid', 'exists:categories,id'],
+            'category_ids'   => ['nullable', 'array', 'min:1'],
+            'category_ids.*' => ['ulid', 'exists:categories,id'],
+            'max_questions'  => ['sometimes', 'integer', 'min:1', 'max:40'],
         ]);
+
+        // Résolution des catégories : category_ids prime sur category_id
+        if (! empty($validated['category_ids'])) {
+            $categoryIds = array_values(array_unique($validated['category_ids']));
+            $categoryId  = $categoryIds[0];
+        } elseif (! empty($validated['category_id'])) {
+            $categoryId  = $validated['category_id'];
+            $categoryIds = [$categoryId];
+        } else {
+            return response()->json([
+                'message' => 'Au moins une catégorie est requise (category_id ou category_ids).',
+                'errors'  => [
+                    'category_id'  => ['Le champ category_id est requis si category_ids est absent.'],
+                    'category_ids' => ['Le champ category_ids est requis si category_id est absent.'],
+                ],
+            ], 422);
+        }
 
         $session = QuizSession::create([
             'user_id'             => $request->user()->id,
-            'category_id'         => $validated['category_id'],
+            'category_id'         => $categoryId,
+            'category_ids'        => $categoryIds,
             'status'              => 'active',
             'current_difficulty'  => 'medium',
             'consecutive_correct' => 0,
             'consecutive_wrong'   => 0,
             'score'               => 0,
+            'max_questions'       => $validated['max_questions'] ?? 20,
         ]);
 
         return response()->json(['data' => $session], 201);
@@ -73,13 +97,16 @@ final class SessionController extends Controller
                 'id'                 => $session->id,
                 'status'             => $session->status,
                 'score'              => $session->score,
+                'max_questions'      => $session->max_questions,
+                'answered_count'     => $session->answers()->count(),
                 'current_difficulty' => $session->current_difficulty->value,
                 'completed_at'       => $session->completed_at,
                 'created_at'         => $session->created_at,
-                'category'           => [
+                'category_ids'       => $session->category_ids ?? ($session->category_id !== null ? [$session->category_id] : []),
+                'category'           => $session->category !== null ? [
                     'id'   => $session->category->id,
                     'name' => $session->category->name,
-                ],
+                ] : null,
             ],
         ]);
     }
@@ -110,6 +137,12 @@ final class SessionController extends Controller
     public function nextQuestion(Request $request, QuizSession $session): JsonResponse
     {
         abort_if($session->user_id !== $request->user()->id, 403);
+
+        // Vérifier si le nombre max de questions est atteint
+        $answeredCount = $session->answers()->count();
+        if ($answeredCount >= $session->max_questions) {
+            return response()->json(['data' => null, 'message' => 'Nombre maximum de questions atteint']);
+        }
 
         $question = $this->adaptiveService->selectNextQuestion($session);
 

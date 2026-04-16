@@ -1,0 +1,3 @@
+[main 3cc0c0f] feat(mobile): solo results screen
+ 1 file changed, 56 insertions(+)
+ create mode 100644 mobile/app/(app)/solo/results.tsx

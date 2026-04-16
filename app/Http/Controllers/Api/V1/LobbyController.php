@@ -18,16 +18,38 @@ final class LobbyController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category_id' => ['required', 'ulid', 'exists:categories,id'],
-            'max_players' => ['sometimes', 'integer', 'min:2', 'max:8'],
+            'category_id'    => ['nullable', 'ulid', 'exists:categories,id'],
+            'category_ids'   => ['nullable', 'array', 'min:1'],
+            'category_ids.*' => ['ulid', 'exists:categories,id'],
+            'max_players'    => ['sometimes', 'integer', 'min:2', 'max:8'],
+            'max_questions'  => ['sometimes', 'integer', 'min:1', 'max:40'],
         ]);
 
+        // Résolution des catégories : category_ids prime sur category_id
+        if (! empty($validated['category_ids'])) {
+            $categoryIds = array_values(array_unique($validated['category_ids']));
+            $categoryId  = $categoryIds[0];
+        } elseif (! empty($validated['category_id'])) {
+            $categoryId  = $validated['category_id'];
+            $categoryIds = [$categoryId];
+        } else {
+            return response()->json([
+                'message' => 'Au moins une catégorie est requise (category_id ou category_ids).',
+                'errors'  => [
+                    'category_id'  => ['Le champ category_id est requis si category_ids est absent.'],
+                    'category_ids' => ['Le champ category_ids est requis si category_id est absent.'],
+                ],
+            ], 422);
+        }
+
         $lobby = Lobby::create([
-            'host_user_id' => $request->user()->id,
-            'category_id'  => $validated['category_id'],
-            'status'       => 'waiting',
-            'code'         => Lobby::generateCode(),
-            'max_players'  => $validated['max_players'] ?? 4,
+            'host_user_id'  => $request->user()->id,
+            'category_id'   => $categoryId,
+            'category_ids'  => $categoryIds,
+            'status'        => 'waiting',
+            'code'          => Lobby::generateCode(),
+            'max_players'   => $validated['max_players'] ?? 4,
+            'max_questions' => $validated['max_questions'] ?? 10,
         ]);
 
         $lobby->participants()->create([
@@ -104,32 +126,33 @@ final class LobbyController extends Controller
     {
         abort_if($lobby->host_user_id !== $request->user()->id, 403);
         abort_if(! $lobby->isWaiting(), 422, 'Le lobby n\'est pas en attente.');
-        abort_if($lobby->participants()->count() < 2, 422, 'Il faut au moins 2 joueurs pour démarrer.');
+        // Minimum 1 joueur (l'hôte peut démarrer seul pour tester)
+        abort_if($lobby->participants()->count() < 1, 422, 'Aucun joueur dans le lobby.');
 
         $lobby->update(['status' => 'in_progress', 'started_at' => now()]);
 
+        $categoryIds = $lobby->category_ids ?? [$lobby->category_id];
+
+        $createdIds = [];
         foreach ($lobby->participants as $participant) {
-            QuizSession::create([
+            $session = QuizSession::create([
                 'user_id'             => $participant->user_id,
                 'category_id'         => $lobby->category_id,
+                'category_ids'        => $categoryIds,
                 'status'              => 'active',
                 'current_difficulty'  => Difficulty::Medium->value,
                 'consecutive_correct' => 0,
                 'consecutive_wrong'   => 0,
                 'score'               => 0,
+                'max_questions'       => $lobby->max_questions ?? 10,
             ]);
+            $createdIds[] = $session->id;
         }
 
         $lobby->load(['category', 'participants.user']);
 
-        $sessions = QuizSession::where('category_id', $lobby->category_id)
-            ->whereIn('user_id', $lobby->participants->pluck('user_id'))
-            ->where('status', 'active')
-            ->latest()
-            ->get()
-            ->keyBy('user_id');
-
-        $sessionMap = $sessions->map(fn ($s) => $s->id)->toArray();
+        $sessions   = QuizSession::whereIn('id', $createdIds)->get()->keyBy('user_id');
+        $sessionMap = $sessions->map(fn (QuizSession $s) => $s->id)->toArray();
 
         LobbyStarted::dispatch(
             lobbyId:    $lobby->id,
@@ -151,14 +174,14 @@ final class LobbyController extends Controller
             ->where('status', 'active')
             ->update(['status' => 'completed', 'completed_at' => now()]);
 
-        // Construire le classement final
+        // Construire le classement final en filtrant sur les sessions créées après le démarrage du lobby
         $leaderboard = $lobby->participants->load('user')
             ->map(fn (LobbyParticipant $p) => [
                 'user_id' => $p->user_id,
                 'name'    => $p->user->name,
                 'score'   => QuizSession::where('user_id', $p->user_id)
-                    ->where('category_id', $lobby->category_id)
-                    ->latest()
+                    ->where('created_at', '>=', $lobby->started_at)
+                    ->orderByDesc('created_at')
                     ->value('score') ?? 0,
             ])
             ->sortByDesc('score')
@@ -176,22 +199,24 @@ final class LobbyController extends Controller
     private function format(Lobby $lobby): array
     {
         return [
-            'id'           => $lobby->id,
-            'code'         => $lobby->code,
-            'status'       => $lobby->status->value,
-            'max_players'  => $lobby->max_players,
-            'host_user_id' => $lobby->host_user_id,
-            'category'     => [
+            'id'            => $lobby->id,
+            'code'          => $lobby->code,
+            'status'        => $lobby->status->value,
+            'max_players'   => $lobby->max_players,
+            'max_questions' => $lobby->max_questions,
+            'host_user_id'  => $lobby->host_user_id,
+            'category'      => [
                 'id'   => $lobby->category->id,
                 'name' => $lobby->category->name,
             ],
-            'participants' => $lobby->participants->map(fn (LobbyParticipant $p) => [
+            'category_ids'  => $lobby->category_ids ?? [$lobby->category_id],
+            'participants'  => $lobby->participants->map(fn (LobbyParticipant $p) => [
                 'user_id'  => $p->user_id,
                 'name'     => $p->user->name,
                 'score'    => $p->score,
                 'is_ready' => $p->is_ready,
             ])->values(),
-            'started_at'   => $lobby->started_at,
+            'started_at'    => $lobby->started_at,
         ];
     }
 

@@ -1,0 +1,2 @@
+bash: ls: command not found
+done

@@ -1,0 +1,26 @@
+36	OPEN	[T18] Tests Feature : QuestionResource + generation IA Pest	ai, testing	2026-04-09T14:38:12Z
+35	OPEN	[T17] Tests Feature : CategoryResource Pest	testing	2026-04-09T14:38:10Z
+34	OPEN	[T16] Seeders : admin + 8 categories de base	database, backend	2026-04-09T14:38:09Z
+33	OPEN	[T15] Widget Dashboard : QuizStatsOverview	filament	2026-04-09T14:38:08Z
+32	OPEN	[T14] Filament Resource : UserResource gestion roles	filament	2026-04-09T14:38:07Z
+31	OPEN	[T13] Page Filament : Generation IA de questions	filament, ai	2026-04-09T14:38:06Z
+30	OPEN	[T12] Pages pour QuestionResource	filament	2026-04-09T14:38:05Z
+29	OPEN	[T11] Filament Resource : QuestionResource liste et filtres	filament	2026-04-09T14:38:03Z
+28	OPEN	[T10] Filament Resource : CategoryResource CRUD	filament	2026-04-09T14:38:02Z
+27	OPEN	[T09] Installation Filament v3 + panel /admin	backend, filament	2026-04-09T14:38:01Z
+26	OPEN	[T08] Model User : role + interface Filament	backend, filament	2026-04-09T14:38:00Z
+25	OPEN	[T07] Models Question + Choice + Factories	backend	2026-04-09T14:37:59Z
+24	OPEN	[T06] Model Category + CategoryFactory	backend	2026-04-09T14:37:57Z
+23	OPEN	[T05] Enums PHP : Difficulty, UserRole, QuestionType, QuestionSource	backend	2026-04-09T14:37:56Z
+22	OPEN	[T04] Migration : colonne role sur users	database, backend	2026-04-09T14:37:55Z
+21	OPEN	[T03] Migration : table choices	database, backend	2026-04-09T14:37:54Z
+20	OPEN	[T02] Migration : table questions	database, backend	2026-04-09T14:37:53Z
+19	OPEN	[T01] Migration : table categories	database, backend	2026-04-09T14:37:52Z
+18	OPEN	[T18] Tests Feature : QuestionResource + generation IA Pest	ai, testing	2026-04-07T14:41:42Z
+17	OPEN	[T17] Tests Feature : CategoryResource Pest	testing	2026-04-07T14:41:41Z
+16	OPEN	[T16] Seeders : admin + 8 categories de base	database, backend	2026-04-07T14:41:40Z
+15	OPEN	[T15] Widget Dashboard : QuizStatsOverview	filament	2026-04-07T14:41:39Z
+14	OPEN	[T14] Filament Resource : UserResource gestion roles	filament	2026-04-07T14:41:38Z
+13	OPEN	[T13] Page Filament : Generation IA de questions	filament, ai	2026-04-07T14:41:37Z
+12	OPEN	[T12] Pages pour QuestionResource	filament	2026-04-07T14:41:36Z
+11	OPEN	[T11] Filament Resource : QuestionResource liste et filtres	filament	2026-04-07T14:41:35Z

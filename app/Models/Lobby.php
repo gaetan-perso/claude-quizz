@@ -14,14 +14,24 @@ final class Lobby extends Model
     use HasFactory, HasUlids;
 
     protected $fillable = [
-        'host_user_id', 'category_id', 'status', 'code', 'max_players', 'started_at', 'completed_at',
+        'host_user_id',
+        'category_id',
+        'category_ids',
+        'status',
+        'code',
+        'max_players',
+        'max_questions',
+        'started_at',
+        'completed_at',
     ];
 
     protected $casts = [
-        'status'       => LobbyStatus::class,
-        'max_players'  => 'integer',
-        'started_at'   => 'datetime',
-        'completed_at' => 'datetime',
+        'status'        => LobbyStatus::class,
+        'max_players'   => 'integer',
+        'max_questions' => 'integer',
+        'category_ids'  => 'array',
+        'started_at'    => 'datetime',
+        'completed_at'  => 'datetime',
     ];
 
     public function host(): BelongsTo

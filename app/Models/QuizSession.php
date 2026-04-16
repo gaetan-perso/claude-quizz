@@ -17,11 +17,13 @@ final class QuizSession extends Model
     protected $fillable = [
         'user_id',
         'category_id',
+        'category_ids',
         'status',
         'current_difficulty',
         'consecutive_correct',
         'consecutive_wrong',
         'score',
+        'max_questions',
         'completed_at',
     ];
 
@@ -30,6 +32,8 @@ final class QuizSession extends Model
         'consecutive_correct' => 'integer',
         'consecutive_wrong'   => 'integer',
         'score'               => 'integer',
+        'max_questions'       => 'integer',
+        'category_ids'        => 'array',
         'completed_at'        => 'datetime',
     ];
 
