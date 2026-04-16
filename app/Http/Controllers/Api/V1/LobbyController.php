@@ -1,27 +1,34 @@
 <?php declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\Difficulty;
-use App\Events\LobbyGameCompleted;
 use App\Events\LobbyPlayerJoined;
 use App\Events\LobbyPlayerLeft;
+use App\Events\LobbyQuestionReady;
 use App\Events\LobbyStarted;
 use App\Http\Controllers\Controller;
 use App\Models\Lobby;
 use App\Models\LobbyParticipant;
+use App\Models\Question;
 use App\Models\QuizSession;
+use App\Services\LobbyQuestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class LobbyController extends Controller
 {
+    public function __construct(
+        private readonly LobbyQuestionService $questionService,
+    ) {}
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'category_id'    => ['nullable', 'ulid', 'exists:categories,id'],
             'category_ids'   => ['nullable', 'array', 'min:1'],
             'category_ids.*' => ['ulid', 'exists:categories,id'],
-            'max_players'    => ['sometimes', 'integer', 'min:2', 'max:8'],
+            'max_players'    => ['sometimes', 'integer', 'min:2', 'max:50'],
             'max_questions'  => ['sometimes', 'integer', 'min:1', 'max:40'],
         ]);
 
@@ -48,7 +55,7 @@ final class LobbyController extends Controller
             'category_ids'  => $categoryIds,
             'status'        => 'waiting',
             'code'          => Lobby::generateCode(),
-            'max_players'   => $validated['max_players'] ?? 4,
+            'max_players'   => $validated['max_players'] ?? 10,
             'max_questions' => $validated['max_questions'] ?? 10,
         ]);
 
@@ -66,7 +73,31 @@ final class LobbyController extends Controller
     {
         $lobby->load(['category', 'participants.user']);
 
-        return response()->json(['data' => $this->format($lobby)]);
+        $data = $this->format($lobby);
+
+        if ($lobby->started_at !== null) {
+            $sessions = QuizSession::where('lobby_id', $lobby->id)
+                ->get()
+                ->keyBy('user_id');
+
+            // session_map pour la navigation (lobby en cours)
+            if ($lobby->status->value === 'in_progress') {
+                $data['session_map'] = $sessions->map(fn (QuizSession $s) => $s->id)->toArray();
+            }
+
+            // Classement calculé depuis les sessions réelles (scores à jour)
+            $data['leaderboard'] = $lobby->participants
+                ->map(fn (LobbyParticipant $p) => [
+                    'user_id' => $p->user_id,
+                    'name'    => $p->user->name,
+                    'score'   => $sessions->get($p->user_id)?->score ?? 0,
+                ])
+                ->sortByDesc('score')
+                ->values()
+                ->toArray();
+        }
+
+        return response()->json(['data' => $data]);
     }
 
     public function join(Request $request): JsonResponse
@@ -129,22 +160,38 @@ final class LobbyController extends Controller
         // Minimum 1 joueur (l'hôte peut démarrer seul pour tester)
         abort_if($lobby->participants()->count() < 1, 422, 'Aucun joueur dans le lobby.');
 
-        $lobby->update(['status' => 'in_progress', 'started_at' => now()]);
+        $lobby->update([
+            'status'                 => 'in_progress',
+            'started_at'             => now(),
+            'current_question_index' => 0,
+        ]);
 
         $categoryIds = $lobby->category_ids ?? [$lobby->category_id];
+        $maxQ        = $lobby->max_questions ?? 10;
+
+        // Générer UNE liste commune de questions pour tous les participants
+        $questionIds = Question::query()
+            ->active()
+            ->whereIn('category_id', $categoryIds)
+            ->inRandomOrder()
+            ->limit($maxQ)
+            ->pluck('id')
+            ->toArray();
 
         $createdIds = [];
         foreach ($lobby->participants as $participant) {
             $session = QuizSession::create([
                 'user_id'             => $participant->user_id,
+                'lobby_id'            => $lobby->id,
                 'category_id'         => $lobby->category_id,
                 'category_ids'        => $categoryIds,
+                'question_ids'        => $questionIds,
                 'status'              => 'active',
                 'current_difficulty'  => Difficulty::Medium->value,
                 'consecutive_correct' => 0,
                 'consecutive_wrong'   => 0,
                 'score'               => 0,
-                'max_questions'       => $lobby->max_questions ?? 10,
+                'max_questions'       => count($questionIds),
             ]);
             $createdIds[] = $session->id;
         }
@@ -154,12 +201,42 @@ final class LobbyController extends Controller
         $sessions   = QuizSession::whereIn('id', $createdIds)->get()->keyBy('user_id');
         $sessionMap = $sessions->map(fn (QuizSession $s) => $s->id)->toArray();
 
+        // 1. Envoyer la session_map à chaque joueur
         LobbyStarted::dispatch(
             lobbyId:    $lobby->id,
             sessionMap: $sessionMap,
         );
 
-        return response()->json(['data' => $this->format($lobby)]);
+        // 2. Broadcaster la première question
+        if (! empty($questionIds)) {
+            $firstQuestion = Question::with(['choices', 'category'])->find($questionIds[0]);
+            if ($firstQuestion !== null) {
+                LobbyQuestionReady::dispatch(
+                    lobbyId:        $lobby->id,
+                    questionIndex:  0,
+                    totalQuestions: count($questionIds),
+                    question:       $this->questionService->formatQuestion($firstQuestion),
+                    startedAt:      now()->toIsoString(),
+                );
+            }
+        }
+
+        return response()->json([
+            'data' => array_merge($this->format($lobby), [
+                'session_map' => $sessionMap,
+            ]),
+        ]);
+    }
+
+    public function advance(Request $request, Lobby $lobby): JsonResponse
+    {
+        abort_if($lobby->host_user_id !== $request->user()->id, 403);
+        abort_if($lobby->status->value !== 'in_progress', 422, 'La partie n\'est pas en cours.');
+
+        $lobby->loadMissing('participants');
+        $continues = $this->questionService->advance($lobby);
+
+        return response()->json(['data' => ['continues' => $continues]]);
     }
 
     public function complete(Request $request, Lobby $lobby): JsonResponse
@@ -167,33 +244,10 @@ final class LobbyController extends Controller
         abort_if($lobby->host_user_id !== $request->user()->id, 403, 'Seul l\'hôte peut terminer la partie.');
         abort_if($lobby->status->value !== 'in_progress', 422, 'Le lobby n\'est pas en cours.');
 
-        $lobby->update(['status' => 'completed', 'completed_at' => now()]);
+        $lobby->loadMissing('participants.user');
+        $this->questionService->completeGame($lobby);
 
-        // Compléter toutes les sessions actives des participants
-        QuizSession::whereIn('user_id', $lobby->participants->pluck('user_id'))
-            ->where('status', 'active')
-            ->update(['status' => 'completed', 'completed_at' => now()]);
-
-        // Construire le classement final en filtrant sur les sessions créées après le démarrage du lobby
-        $leaderboard = $lobby->participants->load('user')
-            ->map(fn (LobbyParticipant $p) => [
-                'user_id' => $p->user_id,
-                'name'    => $p->user->name,
-                'score'   => QuizSession::where('user_id', $p->user_id)
-                    ->where('created_at', '>=', $lobby->started_at)
-                    ->orderByDesc('created_at')
-                    ->value('score') ?? 0,
-            ])
-            ->sortByDesc('score')
-            ->values()
-            ->toArray();
-
-        LobbyGameCompleted::dispatch(
-            lobbyId:     $lobby->id,
-            leaderboard: $leaderboard,
-        );
-
-        return response()->json(['data' => ['leaderboard' => $leaderboard]]);
+        return response()->json(['data' => ['status' => 'completed']]);
     }
 
     private function format(Lobby $lobby): array

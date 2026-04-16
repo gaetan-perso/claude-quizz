@@ -8,7 +8,7 @@ import { apiClient } from '../../../src/lib/api';
 import { colors, spacing, radius } from '../../../src/theme';
 
 interface Choice   { id: string; text: string; }
-interface Question { id: string; text: string; estimated_time_seconds: number; choices: Choice[]; }
+interface Question { id: string; text: string; estimated_time_seconds: number; choices: Choice[]; category?: string; }
 interface AnswerResult {
   selectedId:  string;
   correctId:   string;
@@ -18,7 +18,10 @@ interface AnswerResult {
 }
 
 export default function SoloQuizScreen() {
-  const { sessionId, maxQuestions: maxQ } = useLocalSearchParams<{ sessionId: string; maxQuestions?: string }>();
+  const { sessionId, maxQuestions: maxQ } = useLocalSearchParams<{
+    sessionId: string;
+    maxQuestions?: string;
+  }>();
   const total = parseInt(maxQ ?? '20', 10);
   const router = useRouter();
 
@@ -96,6 +99,11 @@ export default function SoloQuizScreen() {
         </View>
       </View>
 
+      {/* Catégorie de la question */}
+      {question.category ? (
+        <Text style={styles.categoryLabel}>{question.category}</Text>
+      ) : null}
+
       {/* Question */}
       <Text style={styles.questionText}>{question.text}</Text>
 
@@ -140,6 +148,7 @@ const styles = StyleSheet.create({
   counter:       { color: colors.textMuted, fontSize: 15 },
   scoreBadge:    { backgroundColor: colors.surface, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary },
   scoreText:     { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  categoryLabel: { fontSize: 12, color: colors.primary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.sm },
   questionText:  { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: spacing.xl, lineHeight: 28 },
   choices:       { gap: spacing.sm, marginBottom: spacing.lg },
   choice:        { padding: spacing.lg, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },

@@ -12,8 +12,8 @@ export async function getEcho(): Promise<Echo> {
   if (echoInstance) return echoInstance;
 
   const token = await SecureStore.getItemAsync('auth_token');
-  // Retirer "/api" de la base URL pour l'endpoint d'auth broadcasting
-  const authEndpoint = API_BASE_URL.replace('/api', '') + '/broadcasting/auth';
+  // L'endpoint broadcasting/auth est sous le préfixe /api avec middleware auth:sanctum
+  const authEndpoint = API_BASE_URL + '/broadcasting/auth';
 
   echoInstance = new Echo({
     broadcaster:       'reverb',

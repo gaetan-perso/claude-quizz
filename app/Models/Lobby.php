@@ -23,15 +23,17 @@ final class Lobby extends Model
         'max_questions',
         'started_at',
         'completed_at',
+        'current_question_index',
     ];
 
     protected $casts = [
-        'status'        => LobbyStatus::class,
-        'max_players'   => 'integer',
-        'max_questions' => 'integer',
-        'category_ids'  => 'array',
-        'started_at'    => 'datetime',
-        'completed_at'  => 'datetime',
+        'status'                 => LobbyStatus::class,
+        'max_players'            => 'integer',
+        'max_questions'          => 'integer',
+        'category_ids'           => 'array',
+        'started_at'             => 'datetime',
+        'completed_at'           => 'datetime',
+        'current_question_index' => 'integer',
     ];
 
     public function host(): BelongsTo

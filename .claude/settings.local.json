@@ -226,7 +226,10 @@
       "Bash(php -l database/migrations/2026_04_16_000002_add_category_ids_max_questions_to_lobbies_table.php)",
       "Bash(php -l \"app/Http/Controllers/Api/V1/LobbyController.php\")",
       "Bash(dir \"C:\\\\projets\\\\IA\\\\app_quizz_claude\\\\mobile\\\\src\" /B)",
-      "Bash(dir \"C:\\\\projets\\\\IA\\\\app_quizz_claude\\\\mobile\" /B)"
+      "Bash(dir \"C:\\\\projets\\\\IA\\\\app_quizz_claude\\\\mobile\" /B)",
+      "Bash(tee /tmp/migrate_out.txt)",
+      "Bash(tee -a /tmp/migrate_out.txt)",
+      "Bash(php -r \"echo PHP_VERSION;\")"
     ]
   }
 }

@@ -5,7 +5,14 @@ use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\LeaderboardController;
 use App\Http\Controllers\Api\V1\LobbyController;
 use App\Http\Controllers\Api\V1\SessionController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+// ── Broadcasting auth (Sanctum token) ────────────────────────────────────────
+Route::post('broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
+})->middleware('auth:sanctum');
 
 // ── Auth (public) ─────────────────────────────────────────────────────────────
 Route::prefix('v1/auth')->group(function (): void {
@@ -41,5 +48,6 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function (): void {
     Route::post('lobbies/join',          [LobbyController::class, 'join']);
     Route::post('lobbies/{lobby}/leave', [LobbyController::class, 'leave']);
     Route::post('lobbies/{lobby}/start',    [LobbyController::class, 'start']);
+    Route::post('lobbies/{lobby}/advance',  [LobbyController::class, 'advance']);
     Route::post('lobbies/{lobby}/complete', [LobbyController::class, 'complete']);
 });

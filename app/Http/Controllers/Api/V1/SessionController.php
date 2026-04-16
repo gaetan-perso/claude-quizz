@@ -2,10 +2,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Enums\LobbyStatus;
 use App\Models\Category;
 use App\Models\Choice;
+use App\Models\Lobby;
+use App\Models\Question;
 use App\Models\QuizSession;
 use App\Services\AdaptiveDifficultyService;
+use App\Services\LobbyQuestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,6 +17,7 @@ final class SessionController extends Controller
 {
     public function __construct(
         private readonly AdaptiveDifficultyService $adaptiveService,
+        private readonly LobbyQuestionService      $lobbyQuestionService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -138,16 +143,49 @@ final class SessionController extends Controller
     {
         abort_if($session->user_id !== $request->user()->id, 403);
 
-        // Vérifier si le nombre max de questions est atteint
         $answeredCount = $session->answers()->count();
+
+        // Vérifier si le nombre max de questions est atteint
         if ($answeredCount >= $session->max_questions) {
             return response()->json(['data' => null, 'message' => 'Nombre maximum de questions atteint']);
         }
 
-        $question = $this->adaptiveService->selectNextQuestion($session);
+        // Mode multijoueur : liste de questions pré-définie, même ordre pour tous
+        $questionIndex    = null;
+        $totalQuestions   = null;
 
-        if ($question === null) {
-            return response()->json(['data' => null, 'message' => 'Session terminée']);
+        if (!empty($session->question_ids)) {
+            // Mode multijoueur : utiliser l'index courant du lobby comme source de vérité
+            // Tous les joueurs (répondus ou non) voient la même question
+            $lobby = Lobby::find($session->lobby_id);
+
+            if ($lobby === null || $lobby->status === LobbyStatus::Completed) {
+                return response()->json(['data' => null, 'message' => 'Session terminée']);
+            }
+
+            $currentIndex   = $lobby->current_question_index;
+            $questionIds    = $session->question_ids;
+            $totalQuestions = count($questionIds);
+
+            if ($currentIndex >= $totalQuestions) {
+                return response()->json(['data' => null, 'message' => 'Session terminée']);
+            }
+
+            $question = Question::with(['choices', 'category'])->find($questionIds[$currentIndex]);
+            if ($question === null) {
+                return response()->json(['data' => null, 'message' => 'Session terminée']);
+            }
+
+            $questionIndex = $currentIndex;
+        } else {
+            // Mode solo : sélection adaptative
+            $question = $this->adaptiveService->selectNextQuestion($session);
+            if ($question !== null) {
+                $question->load(['choices', 'category']);
+            }
+            if ($question === null) {
+                return response()->json(['data' => null, 'message' => 'Session terminée']);
+            }
         }
 
         return response()->json([
@@ -157,11 +195,15 @@ final class SessionController extends Controller
                     'text'                   => $question->text,
                     'difficulty'             => $question->difficulty->value,
                     'estimated_time_seconds' => $question->estimated_time_seconds,
+                    'category'               => $question->category?->name,
                     'choices'                => $question->choices->map(fn (Choice $c) => [
                         'id'   => $c->id,
                         'text' => $c->text,
-                    ])->values(),
+                    ])->shuffle()->values(),
                 ],
+                // Présents uniquement en mode multi (question_ids défini)
+                'question_index'  => $questionIndex,
+                'total_questions' => $totalQuestions,
                 'current_difficulty' => $session->current_difficulty->value,
             ],
         ]);
@@ -203,6 +245,16 @@ final class SessionController extends Controller
             'consecutive_wrong'   => $update['consecutive_wrong'],
             'score'               => $newScore,
         ]);
+
+        // Auto-avancer si tous les joueurs du lobby ont répondu
+        if ($session->lobby_id !== null) {
+            $lobby = Lobby::with('participants')->find($session->lobby_id);
+            if ($lobby !== null && $lobby->status->value === 'in_progress') {
+                if ($this->lobbyQuestionService->allPlayersAnswered($lobby)) {
+                    $this->lobbyQuestionService->advance($lobby);
+                }
+            }
+        }
 
         return response()->json([
             'data' => [

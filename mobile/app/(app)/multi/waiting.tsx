@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { apiClient } from '../../../src/lib/api';
@@ -12,7 +12,11 @@ interface LobbyData {
   id: string; code: string; status: string;
   host_user_id: string; max_players: number;
   participants: Participant[];
+  category?: { id: string; name: string };
+  category_ids?: string[];
 }
+
+const POLL_INTERVAL = 3000; // ms — fallback si WebSocket indisponible
 
 export default function WaitingRoomScreen() {
   const router = useRouter();
@@ -24,61 +28,115 @@ export default function WaitingRoomScreen() {
   const [loading, setLoading]   = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError]       = useState('');
-  const channelRef              = useRef<any>(null);
+  const [wsConnected, setWsConnected] = useState(false);
 
+  const mountedRef   = useRef(true);
+  const channelRef   = useRef<any>(null);
+  const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const navigatedRef = useRef(false);
+
+  // ── Fetch lobby depuis l'API ────────────────────────────────────────────────
+  const fetchLobby = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get(`/v1/lobbies/${lobbyId}`);
+      if (!mountedRef.current) return;
+      const lobbyData: LobbyData & { session_map?: Record<string, string> } = data.data;
+      setLobby(lobbyData);
+
+      // Si le lobby vient de démarrer et qu'on a la session_map → naviguer
+      if (lobbyData.status === 'in_progress' && lobbyData.session_map) {
+        navigateToQuiz(lobbyData.session_map);
+      }
+    } catch {
+      // Ignorer silencieusement
+    }
+  }, [lobbyId, navigateToQuiz]);
+
+  // ── Démarrage du polling de secours ────────────────────────────────────────
+  const startPolling = useCallback(() => {
+    if (pollRef.current) return;
+    pollRef.current = setInterval(() => {
+      if (mountedRef.current) fetchLobby();
+    }, POLL_INTERVAL);
+  }, [fetchLobby]);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  // ── Navigation sécurisée (anti double-navigation) ──────────────────────────
+  const navigateToQuiz = useCallback((sessionMap: Record<string, string>) => {
+    if (navigatedRef.current || !mountedRef.current) return;
+    const mySessionId = sessionMap[user!.id];
+    if (!mySessionId) return;
+    navigatedRef.current = true;
+    stopPolling();
+    router.replace({
+      pathname: '/multi/quiz',
+      params: { sessionId: mySessionId, lobbyId, isHost },
+    });
+  }, [user, lobbyId, isHost, router, stopPolling]);
+
+  // ── Setup WebSocket + chargement initial ───────────────────────────────────
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
-    // Charger le lobby
+    // Chargement initial
     apiClient.get(`/v1/lobbies/${lobbyId}`)
-      .then(({ data }) => { if (mounted) setLobby(data.data); })
-      .catch((e: any) => { if (mounted) setError(e.message); })
-      .finally(() => { if (mounted) setLoading(false); });
+      .then(({ data }) => { if (mountedRef.current) setLobby(data.data); })
+      .catch((e: any) => { if (mountedRef.current) setError(e.message); })
+      .finally(() => { if (mountedRef.current) setLoading(false); });
 
-    // Écouter le WebSocket
+    // WebSocket
     (async () => {
       try {
         const echo    = await getEcho();
         const channel = echo.join(`lobby.${lobbyId}`);
 
         channel
+          .here(() => {
+            if (mountedRef.current) setWsConnected(true);
+          })
           .listen('.player.joined', (e: { participants: Participant[] }) => {
-            if (mounted) setLobby((prev) => prev ? { ...prev, participants: e.participants } : prev);
+            if (mountedRef.current) setLobby((prev) => prev ? { ...prev, participants: e.participants } : prev);
           })
           .listen('.player.left', (e: { participants: Participant[] }) => {
-            if (mounted) setLobby((prev) => prev ? { ...prev, participants: e.participants } : prev);
+            if (mountedRef.current) setLobby((prev) => prev ? { ...prev, participants: e.participants } : prev);
           })
           .listen('.lobby.started', (e: { session_map: Record<string, string> }) => {
-            if (!mounted) return;
-            const mySessionId = e.session_map[user!.id];
-            if (mySessionId) {
-              router.replace({
-                pathname: '/multi/quiz',
-                params: { sessionId: mySessionId, lobbyId, isHost },
-              });
-            }
+            navigateToQuiz(e.session_map);
           });
 
         channelRef.current = channel;
       } catch {
-        // WebSocket non disponible — continuer sans
+        // WebSocket indisponible — le polling prend le relai
       }
     })();
 
+    // Démarrer le polling de secours dans tous les cas
+    startPolling();
+
     return () => {
-      mounted = false;
+      mountedRef.current = false;
+      stopPolling();
       channelRef.current?.stopListening('.player.joined');
       channelRef.current?.stopListening('.player.left');
       channelRef.current?.stopListening('.lobby.started');
     };
   }, [lobbyId]);
 
+  // ── Démarrer la partie ─────────────────────────────────────────────────────
   async function startGame() {
     setError('');
     setStarting(true);
     try {
-      await apiClient.post(`/v1/lobbies/${lobbyId}/start`);
-      // La navigation sera déclenchée par l'event .lobby.started via WebSocket
+      const { data } = await apiClient.post(`/v1/lobbies/${lobbyId}/start`);
+      // Naviguer directement depuis la réponse API (sans attendre le WebSocket)
+      const sessionMap: Record<string, string> = data.data.session_map ?? {};
+      navigateToQuiz(sessionMap);
     } catch (e: any) {
       setError(e.message);
       setStarting(false);
@@ -89,9 +147,16 @@ export default function WaitingRoomScreen() {
     return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
   }
 
+  const participantCount = lobby?.participants.length ?? 0;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Salle d'attente</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Salle d'attente</Text>
+        <View style={[styles.wsBadge, wsConnected && styles.wsBadgeOk]}>
+          <Text style={styles.wsBadgeText}>{wsConnected ? '● Live' : '○ Sync'}</Text>
+        </View>
+      </View>
 
       <View style={styles.codeBox}>
         <Text style={styles.codeLabel}>Code d'invitation</Text>
@@ -99,7 +164,7 @@ export default function WaitingRoomScreen() {
       </View>
 
       <Text style={styles.sectionLabel}>
-        Joueurs ({lobby?.participants.length ?? 0}/{lobby?.max_players})
+        Joueurs ({participantCount}/{lobby?.max_players})
       </Text>
 
       <FlatList
@@ -127,13 +192,13 @@ export default function WaitingRoomScreen() {
 
       {isHostBool ? (
         <View>
-          {(lobby?.participants.length ?? 0) < 2 && (
+          {participantCount < 2 && (
             <Text style={styles.waitingHint}>
               En attente d'au moins 1 autre joueur…
             </Text>
           )}
           <Button
-            label={starting ? 'Démarrage…' : `Démarrer (${lobby?.participants.length ?? 0}/${lobby?.max_players ?? 4} joueurs)`}
+            label={starting ? 'Démarrage…' : `Démarrer (${participantCount}/${lobby?.max_players ?? 4} joueurs)`}
             onPress={startGame}
             loading={starting}
             disabled={starting}
@@ -151,7 +216,11 @@ export default function WaitingRoomScreen() {
 const styles = StyleSheet.create({
   container:     { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-  title:         { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: spacing.lg },
+  titleRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg },
+  title:         { fontSize: 24, fontWeight: '800', color: colors.text },
+  wsBadge:       { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  wsBadgeOk:     { borderColor: colors.success },
+  wsBadgeText:   { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
   codeBox:       { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', marginBottom: spacing.lg, borderWidth: 2, borderColor: colors.primary },
   codeLabel:     { color: colors.textMuted, fontSize: 13, marginBottom: spacing.xs, textTransform: 'uppercase', letterSpacing: 1 },
   code:          { fontSize: 38, fontWeight: '900', color: colors.primary, letterSpacing: 10 },

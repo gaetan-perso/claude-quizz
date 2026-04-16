@@ -118,6 +118,16 @@ export default function CategoriesScreen() {
     });
   }, []);
 
+  const allSelected = categories.length > 0 && selectedIds.size === categories.length;
+
+  const toggleSelectAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(categories.map((c) => c.id)));
+    }
+  }, [allSelected, categories]);
+
   // ── Calculs dérivés ────────────────────────────────────────────────────────
 
   const { totalAvailable, effective, isLimited, selectionSummary } =
@@ -230,6 +240,23 @@ export default function CategoriesScreen() {
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {/* Tout sélectionner */}
+      {categories.length > 0 && (
+        <TouchableOpacity
+          style={styles.selectAllRow}
+          onPress={toggleSelectAll}
+          activeOpacity={0.7}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: allSelected }}
+          accessibilityLabel="Sélectionner tous les thèmes"
+        >
+          <View style={[styles.selectAllBox, allSelected && styles.selectAllBoxChecked]}>
+            {allSelected && <Text style={styles.selectAllCheck}>✓</Text>}
+          </View>
+          <Text style={styles.selectAllLabel}>Tous les thèmes</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Liste des catégories */}
       <FlatList
@@ -383,6 +410,40 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.md,
     fontSize: 13,
+  },
+
+  // Tout sélectionner
+  selectAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  selectAllBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectAllBoxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  selectAllCheck: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 15,
+  },
+  selectAllLabel: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   // Liste

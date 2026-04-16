@@ -27,6 +27,9 @@ interface Category {
 const QUESTION_COUNTS = [10, 20, 30] as const;
 type QuestionCount = (typeof QUESTION_COUNTS)[number];
 
+const PLAYER_COUNTS = [2, 4, 6, 8, 10] as const;
+type PlayerCount = (typeof PLAYER_COUNTS)[number];
+
 // ─── CategoryCard ─────────────────────────────────────────────────────────────
 
 interface CategoryCardProps {
@@ -94,6 +97,7 @@ export default function LobbyScreen() {
   const [catsLoading, setCatsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [maxQuestions, setMaxQ]       = useState<QuestionCount>(10);
+  const [maxPlayers, setMaxPlayers]   = useState<PlayerCount>(4);
   const [createLoading, setCreateL]   = useState(false);
 
   // État "Rejoindre"
@@ -127,6 +131,16 @@ export default function LobbyScreen() {
     });
   }, []);
 
+  const allSelected = categories.length > 0 && selectedIds.size === categories.length;
+
+  const toggleSelectAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(categories.map((c) => c.id)));
+    }
+  }, [allSelected, categories]);
+
   // ── Calculs dérivés ───────────────────────────────────────────────────────
 
   const { totalAvailable, effective, isLimited, selectionSummary } = useMemo(() => {
@@ -155,7 +169,7 @@ export default function LobbyScreen() {
       const { data } = await apiClient.post('/v1/lobbies', {
         category_ids:  Array.from(selectedIds),
         max_questions: effective,
-        max_players:   4,
+        max_players:   maxPlayers,
       });
       router.push({
         pathname: '/multi/waiting',
@@ -221,6 +235,28 @@ export default function LobbyScreen() {
           </View>
         </View>
 
+        {/* Sélecteur nombre de joueurs */}
+        <View style={styles.countSection}>
+          <Text style={styles.countLabel}>Nombre de joueurs max</Text>
+          <View style={styles.countRow}>
+            {PLAYER_COUNTS.map((count) => (
+              <TouchableOpacity
+                key={count}
+                style={[styles.countBtn, maxPlayers === count && styles.countBtnActive]}
+                onPress={() => setMaxPlayers(count)}
+                activeOpacity={0.8}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: maxPlayers === count }}
+                accessibilityLabel={`${count} joueurs`}
+              >
+                <Text style={[styles.countBtnText, maxPlayers === count && styles.countBtnTextActive]}>
+                  {count}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Résumé de sélection */}
         <View style={styles.summaryRow}>
           <Text style={styles.summaryText}>{selectionSummary}</Text>
@@ -236,16 +272,35 @@ export default function LobbyScreen() {
             <Text style={styles.loadingText}>Chargement des catégories…</Text>
           </View>
         ) : (
-          <View style={styles.categoryList}>
-            {categories.map((item) => (
-              <CategoryCard
-                key={item.id}
-                item={item}
-                selected={selectedIds.has(item.id)}
-                onPress={toggleCategory}
-              />
-            ))}
-          </View>
+          <>
+            {/* Tout sélectionner */}
+            {categories.length > 0 && (
+              <TouchableOpacity
+                style={styles.selectAllRow}
+                onPress={toggleSelectAll}
+                activeOpacity={0.7}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: allSelected }}
+                accessibilityLabel="Sélectionner tous les thèmes"
+              >
+                <View style={[styles.selectAllBox, allSelected && styles.selectAllBoxChecked]}>
+                  {allSelected && <Text style={styles.selectAllCheck}>✓</Text>}
+                </View>
+                <Text style={styles.selectAllLabel}>Tous les thèmes</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.categoryList}>
+              {categories.map((item) => (
+                <CategoryCard
+                  key={item.id}
+                  item={item}
+                  selected={selectedIds.has(item.id)}
+                  onPress={toggleCategory}
+                />
+              ))}
+            </View>
+          </>
         )}
 
         {/* Bouton créer */}
@@ -366,6 +421,40 @@ const styles = StyleSheet.create({
   // Chargement
   loadingRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   loadingText: { color: colors.textMuted, fontSize: 14 },
+
+  // Tout sélectionner
+  selectAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  selectAllBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectAllBoxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  selectAllCheck: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 15,
+  },
+  selectAllLabel: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
 
   // Liste catégories
   categoryList: { gap: spacing.sm },
