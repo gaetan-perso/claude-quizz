@@ -7,11 +7,7 @@
     "orientation": "portrait",
     "platforms": ["ios", "android"],
     "android": {
-      "package": "com.quizzclaude.app",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.quizzclaude.app"
     },
     "plugins": ["expo-router"],
     "assetBundlePatterns": ["**/*"]

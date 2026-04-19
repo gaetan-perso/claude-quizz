@@ -49,7 +49,9 @@ jobs:
 
       - name: Generate native Android project
         working-directory: mobile
-        run: npx expo prebuild --platform android --non-interactive
+        env:
+          CI: '1'
+        run: npx expo prebuild --platform android
 
       - name: Build debug APK
         if: ${{ github.event.inputs.build_type == 'debug' }}
