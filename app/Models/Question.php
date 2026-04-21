@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 final class Question extends Model
 {
@@ -44,12 +45,17 @@ final class Question extends Model
         return $this->hasMany(Choice::class)->where('is_correct', true);
     }
 
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): void
+    public function views(): HasMany
+    {
+        return $this->hasMany(QuestionView::class);
+    }
+
+    public function scopeActive(Builder $query): void
     {
         $query->where('is_active', true);
     }
 
-    public function scopeForDifficulty(\Illuminate\Database\Eloquent\Builder $query, Difficulty $difficulty): void
+    public function scopeForDifficulty(Builder $query, Difficulty $difficulty): void
     {
         $query->where('difficulty', $difficulty->value);
     }

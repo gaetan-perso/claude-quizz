@@ -3,7 +3,9 @@ namespace App\Services;
 
 use App\Enums\Difficulty;
 use App\Models\Question;
+use App\Models\QuestionView;
 use App\Models\QuizSession;
+use Illuminate\Support\Facades\DB;
 
 final class AdaptiveDifficultyService
 {
@@ -43,25 +45,59 @@ final class AdaptiveDifficultyService
 
     /**
      * Sélectionne la prochaine question non répondue dans la session.
+     * Priorise les questions jamais vues par le joueur, puis celles vues le moins souvent.
      * Si la difficulté cible n'a plus de questions disponibles, repasse aux niveaux inférieurs.
      */
+    /** Nb de jours pendant lesquels une question est en "cooldown" après avoir été vue. */
+    private const int COOLDOWN_DAYS = 3;
+
     public function selectNextQuestion(QuizSession $session): ?Question
     {
         $answeredIds = $session->answers()->pluck('question_id')->all();
+        $userId      = $session->user_id;
 
         // Utilise category_ids si disponible, sinon repli sur category_id (rétrocompatibilité)
         $categoryIds = $session->category_ids ?? ($session->category_id !== null ? [$session->category_id] : []);
 
         foreach ($this->fallbackOrder($session->current_difficulty) as $difficulty) {
-            $question = Question::query()
+            // Sous-requête : nombre de vues par question pour cet utilisateur
+            $viewCountSub = DB::table('question_views')
+                ->selectRaw('question_id, COUNT(*) as views_count, MAX(seen_at) as last_seen_at')
+                ->where('user_id', $userId)
+                ->groupBy('question_id');
+
+            $baseQuery = Question::query()
                 ->active()
                 ->whereIn('category_id', $categoryIds)
                 ->forDifficulty($difficulty)
                 ->whereNotIn('id', $answeredIds)
+                ->leftJoinSub($viewCountSub, 'qv', 'questions.id', '=', 'qv.question_id')
+                ->select('questions.*')
+                ->selectRaw('COALESCE(qv.views_count, 0) as views_count')
+                ->selectRaw('qv.last_seen_at');
+
+            // Tentative 1 : questions hors cooldown (jamais vues ou vues il y a plus de N jours)
+            $question = (clone $baseQuery)
+                ->where(fn ($q) => $q
+                    ->whereNull('qv.last_seen_at')
+                    ->orWhere('qv.last_seen_at', '<', now()->subDays(self::COOLDOWN_DAYS))
+                )
+                ->orderBy('views_count', 'asc')
                 ->inRandomOrder()
                 ->first();
 
+            // Tentative 2 : fallback si toutes les questions sont en cooldown
+            $question ??= (clone $baseQuery)
+                ->orderBy('qv.last_seen_at', 'asc') // la moins récemment vue en premier
+                ->first();
+
             if ($question !== null) {
+                QuestionView::create([
+                    'user_id'     => $userId,
+                    'question_id' => $question->id,
+                    'seen_at'     => now(),
+                ]);
+
                 return $question;
             }
         }

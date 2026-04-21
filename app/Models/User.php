@@ -51,4 +51,9 @@ final class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(Lobby::class, 'host_user_id');
     }
+
+    public function questionViews(): HasMany
+    {
+        return $this->hasMany(QuestionView::class);
+    }
 }

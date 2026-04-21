@@ -11,10 +11,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Lobby;
 use App\Models\LobbyParticipant;
 use App\Models\Question;
+use App\Models\QuestionView;
 use App\Models\QuizSession;
 use App\Services\LobbyQuestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class LobbyController extends Controller
 {
@@ -166,17 +168,47 @@ final class LobbyController extends Controller
             'current_question_index' => 0,
         ]);
 
-        $categoryIds = $lobby->category_ids ?? [$lobby->category_id];
-        $maxQ        = $lobby->max_questions ?? 10;
+        $categoryIds    = $lobby->category_ids ?? [$lobby->category_id];
+        $maxQ           = $lobby->max_questions ?? 10;
+        $participantIds = $lobby->participants->pluck('user_id')->all();
 
         // Générer UNE liste commune de questions pour tous les participants
+        // Trier par nombre de vues cumulées des participants (questions les moins vues en priorité)
+        $viewCountSub = DB::table('question_views')
+            ->selectRaw('question_id, COUNT(*) as views_count')
+            ->whereIn('user_id', $participantIds)
+            ->groupBy('question_id');
+
         $questionIds = Question::query()
             ->active()
             ->whereIn('category_id', $categoryIds)
+            ->leftJoinSub($viewCountSub, 'qv', 'questions.id', '=', 'qv.question_id')
+            ->select('questions.id')
+            ->selectRaw('COALESCE(qv.views_count, 0) as views_count')
+            ->orderBy('views_count', 'asc')
             ->inRandomOrder()
             ->limit($maxQ)
-            ->pluck('id')
+            ->pluck('questions.id')
             ->toArray();
+
+        // Enregistrer les vues pour chaque participant
+        $now = now();
+        $viewsToInsert = [];
+        foreach ($participantIds as $userId) {
+            foreach ($questionIds as $questionId) {
+                $viewsToInsert[] = [
+                    'user_id'     => $userId,
+                    'question_id' => $questionId,
+                    'seen_at'     => $now,
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ];
+            }
+        }
+
+        if (! empty($viewsToInsert)) {
+            QuestionView::insert($viewsToInsert);
+        }
 
         $createdIds = [];
         foreach ($lobby->participants as $participant) {
